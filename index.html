@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0a1a">
+<title>РИТМ-ГЕРОЙ 🎵 — попади в бит</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:#07050f;color:#eae4ff;display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none}
+#app{position:relative;width:100%;height:100%;max-width:520px;max-height:100vh;overflow:hidden;
+  display:flex;flex-direction:column;background:linear-gradient(180deg,#1a1030 0%,#100a20 50%,#07050f 100%)}
+
+/* ---------- HUD ---------- */
+#hud{flex:0 0 auto;z-index:6;padding:calc(7px + env(safe-area-inset-top)) 10px 5px;
+  display:flex;align-items:flex-start;gap:8px}
+#scoreBox{flex:1;min-width:0}
+#score{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;
+  color:#fff;text-shadow:0 0 18px rgba(180,120,255,.6)}
+#songName{font-size:10.5px;color:#9d8fc4;font-weight:700;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#comboBox{text-align:right;flex:0 0 auto}
+#combo{font-size:22px;font-weight:900;line-height:1;color:#ffd76b;font-variant-numeric:tabular-nums}
+#comboLb{font-size:9.5px;color:#9d8fc4;font-weight:800;letter-spacing:.5px}
+.ico{width:28px;height:28px;border:1px solid rgba(190,150,255,.25);border-radius:8px;cursor:pointer;
+  background:rgba(30,20,55,.8);color:#c9b8ee;font-size:12.5px;display:flex;align-items:center;
+  justify-content:center;padding:0;flex:0 0 auto}
+.ico:active{transform:scale(.92)}
+#hpWrap{flex:0 0 auto;height:5px;margin:0 10px;background:rgba(0,0,0,.45);border-radius:4px;
+  overflow:hidden;position:relative;z-index:6}
+#hpFill{height:100%;width:100%;border-radius:4px;transition:width .18s,background .3s;
+  background:linear-gradient(90deg,#7bf1a8,#5ad1ff)}
+#hpFill.low{background:linear-gradient(90deg,#ff5f6d,#ff9a7a)}
+
+/* ---------- Дорожки ---------- */
+#stage{flex:1;position:relative;min-height:0;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#judge{position:absolute;left:0;right:0;top:38%;text-align:center;z-index:5;pointer-events:none;
+  font-size:30px;font-weight:900;opacity:0;letter-spacing:1px}
+#judge.pop{animation:jp .55s ease-out}
+@keyframes jp{0%{opacity:0;transform:scale(.6) translateY(8px)}
+  22%{opacity:1;transform:scale(1.12) translateY(0)}
+  70%{opacity:1}100%{opacity:0;transform:scale(1) translateY(-16px)}}
+#comboFx{position:absolute;left:0;right:0;top:52%;text-align:center;z-index:5;pointer-events:none;
+  font-size:15px;font-weight:900;color:#ffd76b;opacity:0;text-shadow:0 0 14px rgba(255,200,80,.8)}
+#comboFx.on{animation:cf .5s ease-out}
+@keyframes cf{0%{opacity:0;transform:scale(.7)}30%{opacity:1;transform:scale(1.1)}100%{opacity:0}}
+#countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  z-index:8;font-size:84px;font-weight:900;color:#fff;text-shadow:0 0 40px rgba(180,120,255,.9);
+  pointer-events:none}
+#countdown.on{display:flex}
+
+/* ---------- Кнопки дорожек ---------- */
+#pads{flex:0 0 auto;display:flex;gap:6px;padding:6px 8px calc(10px + env(safe-area-inset-bottom));
+  z-index:6}
+.pad{flex:1;height:84px;border:0;border-radius:16px;cursor:pointer;position:relative;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03));
+  border:2px solid rgba(255,255,255,.14);overflow:hidden;transition:transform .05s}
+.pad:active,.pad.hit{transform:translateY(3px) scale(.97)}
+.pad .glow{position:absolute;inset:0;opacity:0;transition:opacity .12s}
+.pad.hit .glow{opacity:1}
+.pad .key{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:11px;
+  font-weight:800;color:rgba(255,255,255,.35)}
+.pad .ic{font-size:26px;line-height:1;position:relative;top:-4px}
+
+/* ---------- Экраны ---------- */
+.scr{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;
+  justify-content:center;gap:13px;padding:24px;text-align:center;overflow-y:auto;
+  background:radial-gradient(120% 80% at 50% 12%,rgba(140,80,240,.30),rgba(7,5,15,.97) 70%),rgba(7,5,15,.97);
+  backdrop-filter:blur(7px)}
+.scr.on{display:flex;animation:fi .25s}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+h1{font-size:clamp(30px,9vw,46px);font-weight:900;letter-spacing:2px;
+  background:linear-gradient(90deg,#ff6ec7,#8f7bff,#5ad1ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 26px rgba(160,110,255,.6))}
+h2{font-size:clamp(21px,6.5vw,30px);font-weight:900;color:#eae4ff}
+.sub{font-size:13.5px;color:#b3a5d8;line-height:1.7;max-width:340px}
+.big{font-size:50px;font-weight:900;color:#ffd76b;line-height:1;font-variant-numeric:tabular-nums}
+.btn{border:0;cursor:pointer;font-family:inherit;font-weight:900;font-size:18px;padding:15px 40px;
+  border-radius:15px;color:#1d0d33;background:linear-gradient(180deg,#e0b6ff,#a86bef);
+  box-shadow:0 5px 0 #6c34a8}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #6c34a8}
+.btn.g{background:linear-gradient(180deg,#a8f0c0,#43c47e);box-shadow:0 5px 0 #268a52;color:#07301b}
+.btn.g:active{box-shadow:0 1px 0 #268a52}
+.btn.sm{font-size:14px;padding:11px 20px;border-radius:12px;background:rgba(255,255,255,.11);
+  color:#eae4ff;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.btn.sm:active{box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.rw{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(190,150,255,.22);border-radius:15px;
+  padding:13px 17px;font-size:13.5px;line-height:1.9;max-width:330px;text-align:left;color:#c9bce8}
+.card b{color:#ffd76b}
+
+/* список треков */
+.songs{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px}
+.song{display:flex;align-items:center;gap:11px;cursor:pointer;text-align:left;
+  background:linear-gradient(180deg,rgba(160,110,240,.16),rgba(90,50,150,.10));
+  border:2px solid rgba(190,150,255,.22);border-radius:15px;padding:11px 13px;
+  transition:transform .08s,border-color .15s}
+.song:active{transform:scale(.98)}
+.song.lock{opacity:.42}
+.song .se{font-size:27px;flex:0 0 auto}
+.song .st{flex:1;min-width:0}
+.song .st b{display:block;font-size:15px;color:#f2ebff}
+.song .st span{font-size:11.5px;color:#a695cc;line-height:1.4}
+.song .sd{flex:0 0 auto;text-align:right;font-size:10.5px;font-weight:800;color:#ffd76b}
+.song .sd i{display:block;font-style:normal;color:#8f7bff;font-size:9.5px;margin-top:2px}
+.diff{display:flex;gap:5px;margin-bottom:6px;width:100%;max-width:340px}
+.diff button{flex:1;border:0;border-radius:11px;cursor:pointer;font-family:inherit;font-weight:800;
+  font-size:12px;padding:9px 3px;background:rgba(255,255,255,.07);color:#a695cc}
+.diff button.on{background:linear-gradient(180deg,#a86bef,#7b3fd6);color:#fff}
+
+/* результат */
+.stg{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;max-width:330px}
+.stb{background:rgba(255,255,255,.06);border:1px solid rgba(190,150,255,.18);
+  border-radius:12px;padding:9px 11px;text-align:left}
+.stb b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.stb span{font-size:10.5px;color:#a695cc}
+#rank{font-size:70px;font-weight:900;line-height:1;
+  filter:drop-shadow(0 0 24px currentColor)}
+#toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:50;
+  pointer-events:none;background:rgba(20,12,38,.96);border:1px solid rgba(190,150,255,.4);
+  padding:9px 16px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;max-width:88%;
+  text-align:center}
+#toast.on{animation:tst 2.1s ease}
+@keyframes tst{0%{opacity:0;transform:translate(-50%,10px)}12%{opacity:1;transform:translate(-50%,0)}
+  80%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+#introArt{font-size:60px;filter:drop-shadow(0 0 26px rgba(180,120,255,.7));
+  animation:bt 1.6s ease-in-out infinite}
+@keyframes bt{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="hud">
+    <div id="scoreBox">
+      <div id="score">0</div>
+      <div id="songName">—</div>
+    </div>
+    <div id="comboBox">
+      <div id="combo">0</div>
+      <div id="comboLb">КОМБО</div>
+    </div>
+    <button class="ico" id="sndBtn">🔊</button>
+    <button class="ico" id="menuBtn">☰</button>
+  </div>
+  <div id="hpWrap"><div id="hpFill"></div></div>
+
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="judge"></div>
+    <div id="comboFx"></div>
+    <div id="countdown">3</div>
+  </div>
+
+  <div id="pads"></div>
+
+  <!-- Заставка -->
+  <div class="scr on" id="intro">
+    <div id="introArt">🎵</div>
+    <h1>РИТМ-ГЕРОЙ</h1>
+    <div class="sub">Лови ноты в такт музыке.<br>Держи <b style="color:#ffd76b">комбо</b> и выбей ранг <b style="color:#ff6ec7">S</b>!</div>
+    <button class="btn" id="playBtn">ВЫБРАТЬ ТРЕК</button>
+    <div class="rw">
+      <button class="btn sm" id="howBtn">❓ Как играть</button>
+      <button class="btn sm" id="lbBtn">🏆 Лидеры</button>
+    </div>
+    <div class="sub" id="introMeta" style="font-size:12px"></div>
+  </div>
+
+  <!-- Выбор трека -->
+  <div class="scr" id="selScr">
+    <h2>🎧 Выбери трек</h2>
+    <div class="diff" id="diffRow"></div>
+    <div class="songs" id="songList"></div>
+    <button class="btn sm" id="selBack">← Назад</button>
+  </div>
+
+  <!-- Правила -->
+  <div class="scr" id="howScr">
+    <h2>Как играть</h2>
+    <div class="card">
+      🎯 Ноты падают вниз по <b>4 дорожкам</b><br>
+      👆 Жми кнопку, когда нота в <b>зоне попадания</b><br>
+      ⌨️ На клавиатуре: <b>D · F · J · K</b><br>
+      🔥 Точнее попал — больше очков:<br>
+      &nbsp;&nbsp;&nbsp;<b>PERFECT</b> 300 · <b>GREAT</b> 200 · <b>GOOD</b> 100<br>
+      💔 Промах отнимает здоровье<br>
+      ⭐ Комбо ×2 после 10 нот подряд<br><br>
+      🎼 Музыка синтезируется на лету — ноты <b>всегда в такт</b>
+    </div>
+    <button class="btn" id="howClose">Понятно</button>
+  </div>
+
+  <!-- Результат -->
+  <div class="scr" id="resScr">
+    <div id="rank">S</div>
+    <h2 id="resTtl">Трек пройден!</h2>
+    <div class="big" id="resScore">0</div>
+    <div class="stg" id="resStats"></div>
+    <div class="sub" id="resExtra" style="font-size:12px"></div>
+    <button class="btn" id="againBtn">ЕЩЁ РАЗ</button>
+    <div class="rw">
+      <button class="btn sm" id="shareBtn">📣 Похвастаться</button>
+      <button class="btn sm" id="selBtn2">🎧 Другой трек</button>
+      <button class="btn sm" id="menuBtn2">Меню</button>
+    </div>
+  </div>
+
+  <!-- Статистика -->
+  <div class="scr" id="statScr">
+    <h2>📊 Профиль</h2>
+    <div class="stg" id="statBox"></div>
+    <div class="sub" style="font-size:12px" id="statLine"></div>
+    <div class="songs" id="statSongs"></div>
+    <div class="rw">
+      <button class="btn sm" id="stShare">📣 Похвастаться</button>
+      <button class="btn sm" id="stLb">🏆 Лидеры</button>
+      <button class="btn sm" id="stClose">Назад</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+<script>
+(function(){
+'use strict';
+function $(id){return document.getElementById(id);}
+function nop(){}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function rf(a,b){return a+Math.random()*(b-a);}
+function ri(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function fnum(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+
+/* ============================================================
+   1. АУДИО — синтез музыки и звуков
+   ============================================================ */
+var A={ctx:null,master:null,mus:null,sfx:null,on:true,started:false,_nb:null};
+function actx(){
+  if(!A.ctx&&A.on){
+    try{
+      var C=window.AudioContext||window.webkitAudioContext;
+      A.ctx=new C();
+      A.master=A.ctx.createGain();A.master.gain.value=.9;A.master.connect(A.ctx.destination);
+      A.mus=A.ctx.createGain();A.mus.gain.value=.55;A.mus.connect(A.master);
+      A.sfx=A.ctx.createGain();A.sfx.gain.value=.8;A.sfx.connect(A.master);
+    }catch(e){A.on=false;A.ctx=null;}
+  }
+  if(A.ctx&&A.ctx.state==='suspended')A.ctx.resume();
+  return A.ctx;
+}
+function hz(m){return 440*Math.pow(2,(m-69)/12);}
+function nbuf(){
+  if(A._nb)return A._nb;
+  var c=A.ctx,len=Math.floor(c.sampleRate*.6),b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  A._nb=b;return b;
+}
+/* --- инструменты --- */
+function synLead(f,t,dur,v,wave){
+  var c=A.ctx,o=c.createOscillator(),o2=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();
+  lp.type='lowpass';lp.frequency.setValueAtTime(3200,t);
+  lp.frequency.exponentialRampToValueAtTime(900,t+dur);
+  o.type=wave||'sawtooth';o.frequency.value=f;
+  o2.type='square';o2.frequency.value=f*1.005;
+  var g2=c.createGain();g2.gain.value=.35;
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v||.10,t+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(lp);o2.connect(g2);g2.connect(lp);lp.connect(g);g.connect(A.mus);
+  o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);
+}
+function synBass(f,t,dur,v){
+  var c=A.ctx,o=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();
+  lp.type='lowpass';lp.frequency.setValueAtTime(420,t);
+  lp.frequency.exponentialRampToValueAtTime(140,t+dur);
+  o.type='triangle';o.frequency.value=f;
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v||.20,t+.02);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(lp);lp.connect(g);g.connect(A.mus);
+  o.start(t);o.stop(t+dur+.05);
+}
+function synKick(t,v){
+  var c=A.ctx,o=c.createOscillator(),g=c.createGain();
+  o.type='sine';o.frequency.setValueAtTime(150,t);
+  o.frequency.exponentialRampToValueAtTime(38,t+.13);
+  g.gain.setValueAtTime(v||.42,t);
+  g.gain.exponentialRampToValueAtTime(.0001,t+.22);
+  o.connect(g);g.connect(A.mus);o.start(t);o.stop(t+.26);
+}
+function synSnare(t,v){
+  var c=A.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();
+  s.buffer=nbuf();f.type='bandpass';f.frequency.value=1900;f.Q.value=.9;
+  g.gain.setValueAtTime(v||.17,t);g.gain.exponentialRampToValueAtTime(.0001,t+.15);
+  s.connect(f);f.connect(g);g.connect(A.mus);s.start(t);s.stop(t+.2);
+}
+function synHat(t,v){
+  var c=A.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();
+  s.buffer=nbuf();f.type='highpass';f.frequency.value=7200;
+  g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+.045);
+  s.connect(f);f.connect(g);g.connect(A.mus);s.start(t);s.stop(t+.07);
+}
+function synPad(root,t,dur,v){
+  var c=A.ctx,lp=c.createBiquadFilter(),g=c.createGain();
+  lp.type='lowpass';lp.frequency.setValueAtTime(600,t);
+  lp.frequency.linearRampToValueAtTime(1300,t+dur*.5);
+  lp.frequency.linearRampToValueAtTime(500,t+dur);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v||.045,t+.5);
+  g.gain.setValueAtTime(v||.045,t+dur*.75);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  lp.connect(g);g.connect(A.mus);
+  [0,4,7,12].forEach(function(iv,i){
+    var o=c.createOscillator();o.type='sawtooth';o.frequency.value=hz(root+iv);
+    o.detune.value=i%2?8:-8;o.connect(lp);o.start(t);o.stop(t+dur+.1);
+  });
+}
+/* --- звуки попаданий --- */
+function bp(f,d,type,v,f2,t0){
+  if(!A.ctx)return;
+  var c=A.ctx,o=c.createOscillator(),g=c.createGain(),t=t0||c.currentTime;
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+  if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(1,f2),t+d);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v||.1,t+.006);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(A.sfx);o.start(t);o.stop(t+d+.03);
+}
+function nz(d,v,hpf,t0){
+  if(!A.ctx)return;
+  var c=A.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),t=t0||c.currentTime;
+  s.buffer=nbuf();f.type='highpass';f.frequency.value=hpf||1200;
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(f);f.connect(g);g.connect(A.sfx);s.start(t);s.stop(t+d+.04);
+}
+function sfx(n,p){
+  if(!A.on||!actx())return;
+  var c=A.ctx,t=c.currentTime;
+  switch(n){
+    case 'perfect': bp(1400,.06,'square',.07);bp(2100,.09,'sine',.05,0,t+.03);
+                    nz(.05,.03,6000,t); break;
+    case 'great':   bp(1100,.06,'square',.06);bp(1500,.07,'sine',.04,0,t+.03); break;
+    case 'good':    bp(760,.06,'triangle',.055); break;
+    case 'miss':    bp(190,.16,'sawtooth',.09,110);nz(.08,.04,500,t); break;
+    case 'click':   bp(700,.04,'square',.05); break;
+    case 'lvl':     [67,71,74,79].forEach(function(m,i){bp(hz(m),.3,'triangle',.09,0,t+i*.09);}); break;
+    case 'finish':  [60,64,67,72,76,79,84].forEach(function(m,i){
+                      bp(hz(m),.55,'triangle',.10,0,t+i*.09);}); break;
+    case 'fail':    [62,57,52,45].forEach(function(m,i){bp(hz(m),.5,'sawtooth',.10,0,t+i*.15);}); break;
+    case 'err':     bp(200,.12,'sawtooth',.07,120); break;
+    case 'coin':    bp(1180,.05,'square',.07);bp(1720,.1,'square',.06,0,t+.05); break;
+  }
+}
+function audioWake(){
+  if(A.started)return;A.started=true;actx();
+}
+function toggleSnd(){
+  P.snd=(P.snd===false);
+  if(A.master)A.master.gain.value=P.snd?.9:0;
+  $('sndBtn').textContent=P.snd?'🔊':'🔇';
+  save();toast(P.snd?'🔊 Звук включён':'🔇 Звук выключен');
+}
+
+/* ============================================================
+   2. VK
+   ============================================================ */
+var VK={ready:false};
+var bridge=window.vkBridge||null;
+function vkInit(){
+  if(!bridge||!bridge.send)return;
+  try{
+    bridge.send('VKWebAppInit').then(function(){
+      VK.ready=true;
+      bridge.send('VKWebAppGetUserInfo').then(function(u){
+        if(u&&u.first_name)P.name=u.first_name;
+      }).catch(nop);
+      cloudLoad();
+    }).catch(nop);
+  }catch(e){}
+}
+function haptic(s){
+  if(VK.ready)bridge.send('VKWebAppTapticImpactOccurred',{style:s||'light'}).catch(nop);
+  else if(navigator.vibrate)navigator.vibrate(s==='heavy'?30:6);
+}
+function showLB(){
+  if(VK.ready)bridge.send('VKWebAppShowLeaderBoardBox',{user_result:P.totalScore|0})
+    .catch(function(){toast('Рейтинг недоступен');});
+  else toast('🏆 Рейтинг только в ВК');
+}
+function share(){
+  var t='Выбил ранг '+(P.bestRank||'—')+' в «РИТМ-ГЕРОЕ» 🎵 '+fnum(P.bestScore)+
+    ' очков и комбо ×'+P.bestCombo+'! Попадёшь точнее?';
+  if(VK.ready){
+    bridge.send('VKWebAppShowWallPostBox',{message:t}).catch(function(){
+      bridge.send('VKWebAppShare',{link:location.href}).catch(nop);});
+  }else if(navigator.share){navigator.share({text:t,url:location.href}).catch(nop);}
+  else{try{navigator.clipboard.writeText(t+' '+location.href);toast('📋 Скопировано');}catch(e){toast(t);}}
+}
+var adBusy=false;
+function watchAd(cb){
+  if(adBusy)return;
+  if(!VK.ready){cb(true);return;}
+  adBusy=true;toast('📺 Загружаем ролик…');
+  bridge.send('VKWebAppShowNativeAds',{ad_format:'reward'}).then(function(d){
+    adBusy=false;
+    if(d&&d.result)cb(true);
+    else{sfx('err');toast('Реклама недоступна');}
+  }).catch(function(){adBusy=false;sfx('err');toast('Реклама недоступна');});
+}
+
+/* ============================================================
+   3. ТРЕКИ (генерируются из партитуры)
+   ============================================================ */
+/* scale — гамма, prog — аккорды, pat — плотность нот */
+var SONGS=[
+  {id:'s1',e:'🌊',n:'Первая волна',bpm:96, bars:28,lvl:0,
+   root:57,scale:[0,2,4,7,9],prog:[0,5,3,4],style:'chill',
+   d:'Спокойный старт'},
+  {id:'s2',e:'🔥',n:'Неоновый разгон',bpm:124,bars:32,lvl:0,
+   root:55,scale:[0,3,5,7,10],prog:[0,3,5,3],style:'drive',
+   d:'Классический бит'},
+  {id:'s3',e:'⚡',n:'Электрошок',bpm:142,bars:32,lvl:2,
+   root:52,scale:[0,3,5,6,7,10],prog:[0,5,3,7],style:'hard',
+   d:'Быстрые связки'},
+  {id:'s4',e:'🌌',n:'Космо-дрейф',bpm:110,bars:30,lvl:4,
+   root:60,scale:[0,2,4,6,7,9,11],prog:[0,4,2,5],style:'space',
+   d:'Плавно и коварно'},
+  {id:'s5',e:'👾',n:'Пиксель-шторм',bpm:156,bars:34,lvl:7,
+   root:50,scale:[0,3,5,7,10],prog:[0,3,7,5],style:'chip',
+   d:'Ретро-скорость'},
+  {id:'s6',e:'💀',n:'Финальный босс',bpm:172,bars:36,lvl:11,
+   root:48,scale:[0,1,3,5,6,8,10],prog:[0,6,3,1],style:'boss',
+   d:'Только для мастеров'}
+];
+var DIFFS=[
+  {id:0,n:'Лёгкий',   dens:0.42,speed:0.90,hpLoss:5, mult:1.0},
+  {id:1,n:'Средний',  dens:0.62,speed:1.05,hpLoss:7, mult:1.4},
+  {id:2,n:'Сложный',  dens:0.82,speed:1.22,hpLoss:9, mult:1.9},
+  {id:3,n:'Безумный', dens:1.00,speed:1.42,hpLoss:12,mult:2.5}
+];
+var LANES=4;
+var LANE_COL=['#ff5fa2','#ffb14e','#5ad1ff','#8f7bff'];
+var LANE_ICON=['◀','▼','▲','▶'];
+var KEYS=['d','f','j','k'];
+var KEYS_RU=['в','а','о','л'];
+
+/* детерминированный генератор — трек всегда одинаковый */
+function rng(seed){
+  var s=seed>>>0;
+  return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};
+}
+/* создаём карту нот и партитуру музыки */
+function buildChart(song,diff){
+  var R=rng(song.id.charCodeAt(1)*7919+diff*104729+song.bpm);
+  var spb=60/song.bpm;              /* сек на долю */
+  var notes=[],music=[];
+  var beat=0;
+  var totalBeats=song.bars*4;
+  for(var b=0;b<totalBeats;b++){
+    var t=b*spb;
+    var bar=Math.floor(b/4), inBar=b%4;
+    var chord=song.prog[bar%song.prog.length];
+    /* --- музыка: барабаны --- */
+    if(inBar===0||inBar===2)music.push({t:t,f:'kick'});
+    if(inBar===1||inBar===3)music.push({t:t,f:'snare'});
+    music.push({t:t,f:'hat'});
+    if(song.style!=='chill')music.push({t:t+spb/2,f:'hat',v:.03});
+    /* --- бас --- */
+    if(inBar===0||inBar===2)
+      music.push({t:t,f:'bass',n:song.root-12+chord,d:spb*0.9});
+    /* --- пад на такт --- */
+    if(inBar===0)music.push({t:t,f:'pad',n:song.root-12+chord,d:spb*3.8});
+    /* --- ноты игрока + мелодия --- */
+    var sub=(song.style==='hard'||song.style==='chip'||song.style==='boss')?2:1;
+    for(var s2=0;s2<sub;s2++){
+      var nt=t+s2*spb/sub;
+      var chance=DIFFS[diff].dens*(s2===0?1:0.55);
+      if(inBar===0)chance=Math.min(1,chance*1.35);
+      if(R()<chance){
+        var lane=Math.floor(R()*LANES);
+        var deg=song.scale[Math.floor(R()*song.scale.length)];
+        var oct=R()<0.28?12:0;
+        var midi=song.root+chord+deg+oct;
+        notes.push({t:nt,lane:lane,midi:midi,hit:0,miss:0});
+        music.push({t:nt,f:'lead',n:midi,d:spb*0.55});
+      }
+    }
+  }
+  notes.sort(function(a,b2){return a.t-b2.t;});
+  music.sort(function(a,b2){return a.t-b2.t;});
+  return {notes:notes,music:music,dur:totalBeats*spb+2};
+}
+
+/* ============================================================
+   4. СОСТОЯНИЕ
+   ============================================================ */
+var SAVE='rhythm_hero_v1';
+var P={name:'Игрок',lvl:1,xp:0,coins:0,
+  bestScore:0,bestCombo:0,bestRank:'',totalScore:0,plays:0,perfects:0,
+  results:{},snd:true,seenIntro:0,diff:0,revives:0};
+function save(){
+  try{localStorage.setItem(SAVE,JSON.stringify(P));}catch(e){}
+  if(VK.ready)bridge.send('VKWebAppStorageSet',{key:SAVE,value:JSON.stringify(P)}).catch(nop);
+}
+function mergeSave(o){
+  if(!o||typeof o!=='object')return;
+  ['name','lvl','xp','coins','bestScore','bestCombo','bestRank','totalScore','plays',
+   'perfects','seenIntro','diff','revives'].forEach(function(k){
+    if(typeof o[k]==='number'&&isFinite(o[k]))P[k]=o[k];
+    else if(typeof o[k]==='string')P[k]=o[k];
+  });
+  if(typeof o.snd==='boolean')P.snd=o.snd;
+  if(o.results&&typeof o.results==='object')P.results=o.results;
+}
+function localLoad(){try{var s=localStorage.getItem(SAVE);if(s)mergeSave(JSON.parse(s));}catch(e){}}
+function cloudLoad(){
+  if(!VK.ready)return;
+  bridge.send('VKWebAppStorageGet',{keys:[SAVE]}).then(function(d){
+    try{
+      var kv=(d.keys||[])[0];
+      if(kv&&kv.value){
+        var c=JSON.parse(kv.value);
+        if((c.totalScore||0)>(P.totalScore||0)){mergeSave(c);paintMeta();toast('☁️ Прогресс загружен');}
+        else save();
+      }else save();
+    }catch(e){}
+  }).catch(nop);
+}
+function xpNeed(l){return Math.round(200+l*l*90);}
+function addXp(n){
+  P.xp+=n;var up=0;
+  while(P.xp>=xpNeed(P.lvl)){P.xp-=xpNeed(P.lvl);P.lvl++;up++;}
+  if(up){sfx('lvl');toast('⭐ Уровень '+P.lvl+'!');}
+}
+
+/* ============================================================
+   5. ИГРА
+   ============================================================ */
+var G={state:'menu',song:null,diff:0,chart:null,
+  startT:0,now:0,score:0,combo:0,maxCombo:0,hp:100,
+  perfect:0,great:0,good:0,miss:0,total:0,
+  musIdx:0,noteIdx:0,fx:[],lanePulse:[0,0,0,0],ended:false,revived:0};
+
+/* окна попадания в секундах */
+var W_PERFECT=0.055, W_GREAT=0.105, W_GOOD=0.155;
+var LEAD=2.35;   /* сколько секунд нота видна до линии */
+
+function startSong(song,diff){
+  audioWake();
+  if(!actx()){toast('Звук недоступен');return;}
+  G.song=song;G.diff=diff;
+  G.chart=buildChart(song,diff);
+  G.score=0;G.combo=0;G.maxCombo=0;G.hp=100;
+  G.perfect=G.great=G.good=G.miss=0;
+  G.total=G.chart.notes.length;
+  G.musIdx=0;G.noteIdx=0;G.fx=[];G.ended=false;G.revived=0;
+  G.lanePulse=[0,0,0,0];
+  G.state='count';
+  showScr('');
+  $('songName').textContent=song.e+' '+song.n+' · '+DIFFS[diff].n;
+  paintHud();
+  /* обратный отсчёт */
+  var cd=$('countdown');cd.classList.add('on');
+  var n=3;cd.textContent=n;
+  sfx('click');
+  var iv=setInterval(function(){
+    n--;
+    if(n>0){cd.textContent=n;sfx('click');}
+    else{
+      clearInterval(iv);
+      cd.textContent='GO!';
+      setTimeout(function(){cd.classList.remove('on');},420);
+      G.startT=A.ctx.currentTime+0.15;
+      G.state='play';
+      sfx('lvl');
+    }
+  },700);
+}
+function songTime(){
+  if(!A.ctx)return 0;
+  return A.ctx.currentTime-G.startT;
+}
+/* планировщик музыки */
+function scheduleMusic(){
+  if(!A.ctx||G.state!=='play')return;
+  var horizon=songTime()+0.35;
+  var M=G.chart.music;
+  var guard=0;
+  while(G.musIdx<M.length&&M[G.musIdx].t<horizon&&guard++<60){
+    var e=M[G.musIdx++];
+    var at=G.startT+e.t;
+    if(at<A.ctx.currentTime-0.05)continue;
+    if(e.f==='kick')synKick(at,.42);
+    else if(e.f==='snare')synSnare(at,.16);
+    else if(e.f==='hat')synHat(at,e.v||.05);
+    else if(e.f==='bass')synBass(hz(e.n),at,e.d,.20);
+    else if(e.f==='pad')synPad(e.n,at,e.d,.04);
+    else if(e.f==='lead')synLead(hz(e.n),at,e.d,.085,
+      G.song.style==='chip'?'square':'sawtooth');
+  }
+}
+
+function judge(lane){
+  if(G.state!=='play')return;
+  var t=songTime();
+  var best=null,bestD=999;
+  var N=G.chart.notes;
+  /* ищем ближайшую непобитую ноту на этой дорожке */
+  for(var i=Math.max(0,G.noteIdx-6);i<N.length;i++){
+    var n=N[i];
+    if(n.t-t>W_GOOD+0.05)break;
+    if(n.hit||n.miss||n.lane!==lane)continue;
+    var d=Math.abs(n.t-t);
+    if(d<bestD){bestD=d;best=n;}
+  }
+  G.lanePulse[lane]=1;
+  if(!best||bestD>W_GOOD){
+    /* пустой тап — лёгкий штраф по комбо, но не по HP */
+    if(G.combo>0){G.combo=0;paintHud();}
+    sfx('miss');
+    return;
+  }
+  best.hit=1;
+  var kind,pts;
+  if(bestD<=W_PERFECT){kind='PERFECT';pts=300;G.perfect++;P.perfects++;sfx('perfect');}
+  else if(bestD<=W_GREAT){kind='GREAT';pts=200;G.great++;sfx('great');}
+  else{kind='GOOD';pts=100;G.good++;sfx('good');}
+  G.combo++;
+  if(G.combo>G.maxCombo)G.maxCombo=G.combo;
+  var mult=G.combo>=30?4:G.combo>=20?3:G.combo>=10?2:1;
+  G.score+=Math.round(pts*mult*DIFFS[G.diff].mult);
+  G.hp=Math.min(100,G.hp+(kind==='PERFECT'?1.4:0.8));
+  showJudge(kind);
+  if(G.combo>0&&G.combo%10===0){
+    showComboFx('КОМБО ×'+mult+'!');
+    haptic('medium');
+  }else haptic('light');
+  hitFx(lane,kind);
+  paintHud();
+}
+function missNote(n){
+  n.miss=1;G.miss++;
+  G.combo=0;
+  G.hp-=DIFFS[G.diff].hpLoss;
+  sfx('miss');
+  showJudge('MISS');
+  paintHud();
+  if(G.hp<=0)failSong();
+}
+function showJudge(k){
+  var el=$('judge');
+  el.textContent=k;
+  el.style.color=k==='PERFECT'?'#5ad1ff':k==='GREAT'?'#7bf1a8':
+                 k==='GOOD'?'#ffd76b':'#ff6b8a';
+  el.style.textShadow='0 0 22px currentColor';
+  el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+}
+function showComboFx(t){
+  var el=$('comboFx');el.textContent=t;
+  el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
+}
+function hitFx(lane,kind){
+  var n=kind==='PERFECT'?12:kind==='GREAT'?8:5;
+  for(var i=0;i<n;i++){
+    var a=rf(-Math.PI*0.85,-Math.PI*0.15);
+    G.fx.push({lane:lane,x:rf(-.4,.4),y:0,
+      vx:Math.cos(a)*rf(.4,1.5),vy:Math.sin(a)*rf(1,2.6),
+      life:rf(.3,.6),t:0,c:kind==='PERFECT'?'#5ad1ff':LANE_COL[lane]});
+  }
+}
+function endSong(){
+  if(G.ended)return;
+  G.ended=true;G.state='result';
+  sfx('finish');
+  var acc=G.total?(G.perfect*100+G.great*70+G.good*40)/(G.total*100):0;
+  var rank=acc>=.95?'S':acc>=.88?'A':acc>=.75?'B':acc>=.60?'C':'D';
+  if(G.miss===0&&G.total>0)rank=acc>=.9?'S':rank;
+  P.plays++;P.totalScore+=G.score;
+  P.coins+=Math.round(G.score/100);
+  addXp(Math.round(30+G.score/500));
+  var key=G.song.id+'_'+G.diff;
+  var prev=P.results[key]||{score:0,rank:'',combo:0};
+  var isRec=G.score>prev.score;
+  if(isRec)P.results[key]={score:G.score,rank:rank,combo:G.maxCombo,acc:Math.round(acc*100)};
+  if(G.score>P.bestScore){P.bestScore=G.score;P.bestRank=rank;}
+  if(G.maxCombo>P.bestCombo)P.bestCombo=G.maxCombo;
+  save();
+  var rc={S:'#ffd76b',A:'#7bf1a8',B:'#5ad1ff',C:'#b3a5d8',D:'#ff9a7a'}[rank];
+  $('rank').textContent=rank;$('rank').style.color=rc;
+  $('resTtl').textContent=isRec?'🏆 Новый рекорд!':'Трек пройден!';
+  $('resScore').textContent=fnum(G.score);
+  $('resStats').innerHTML=
+    '<div class="stb"><b style="color:#5ad1ff">'+G.perfect+'</b><span>PERFECT</span></div>'+
+    '<div class="stb"><b style="color:#7bf1a8">'+G.great+'</b><span>GREAT</span></div>'+
+    '<div class="stb"><b style="color:#ffd76b">'+G.good+'</b><span>GOOD</span></div>'+
+    '<div class="stb"><b style="color:#ff6b8a">'+G.miss+'</b><span>MISS</span></div>'+
+    '<div class="stb"><b>×'+G.maxCombo+'</b><span>макс. комбо</span></div>'+
+    '<div class="stb"><b>'+Math.round(acc*100)+'%</b><span>точность</span></div>';
+  $('resExtra').innerHTML='🪙 +'+fnum(Math.round(G.score/100))+' монет · '+
+    (G.miss===0?'<b style="color:#ffd76b">FULL COMBO!</b>':'Промахов: '+G.miss);
+  showScr('resScr');
+}
+function failSong(){
+  if(G.ended)return;
+  G.ended=true;G.state='fail';
+  sfx('fail');
+  $('rank').textContent='✖';$('rank').style.color='#ff6b8a';
+  $('resTtl').textContent='Провал…';
+  $('resScore').textContent=fnum(G.score);
+  $('resStats').innerHTML=
+    '<div class="stb"><b style="color:#5ad1ff">'+G.perfect+'</b><span>PERFECT</span></div>'+
+    '<div class="stb"><b style="color:#ff6b8a">'+G.miss+'</b><span>MISS</span></div>'+
+    '<div class="stb"><b>×'+G.maxCombo+'</b><span>макс. комбо</span></div>'+
+    '<div class="stb"><b>'+Math.round(G.noteIdx/Math.max(1,G.total)*100)+'%</b><span>пройдено</span></div>';
+  $('resExtra').innerHTML=G.revived<1
+    ? '<button class="btn g" id="reviveBtn" style="font-size:15px;padding:12px 24px">📺 ПРОДОЛЖИТЬ</button>'
+    : 'Попробуй трек полегче или другую сложность';
+  P.plays++;save();
+  showScr('resScr');
+  var rb=$('reviveBtn');
+  if(rb)rb.onclick=function(){
+    watchAd(function(ok){
+      if(!ok)return;
+      G.revived++;G.hp=70;G.ended=false;G.state='play';
+      P.revives=(P.revives|0)+1;
+      showScr('');sfx('lvl');toast('✨ Продолжаем!');
+      paintHud();
+    });
+  };
+}
+
+/* ============================================================
+   6. ОТРИСОВКА
+   ============================================================ */
+var cv=$('cv'),ctx=cv.getContext('2d');
+var W=0,H=0,DPR=1,HIT_Y=0;
+function resize(){
+  var r=$('stage').getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2.5);
+  W=r.width;H=r.height;
+  cv.width=Math.max(1,Math.round(W*DPR));cv.height=Math.max(1,Math.round(H*DPR));
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  HIT_Y=H-Math.max(48,H*0.11);
+}
+window.addEventListener('resize',function(){setTimeout(resize,80);});
+window.addEventListener('orientationchange',function(){setTimeout(resize,260);});
+function laneX(i){return W*(i+0.5)/LANES;}
+function laneW(){return W/LANES;}
+
+function draw(dt){
+  if(W<2)return;
+  ctx.clearRect(0,0,W,H);
+  /* фон-дорожки */
+  for(var i=0;i<LANES;i++){
+    var x=laneX(i)-laneW()/2;
+    var g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'rgba(255,255,255,.015)');
+    g.addColorStop(1,'rgba(255,255,255,.05)');
+    ctx.fillStyle=g;
+    ctx.fillRect(x+1,0,laneW()-2,H);
+    /* пульс дорожки */
+    if(G.lanePulse[i]>0){
+      ctx.save();
+      ctx.globalAlpha=G.lanePulse[i]*0.30;
+      var pg=ctx.createLinearGradient(0,HIT_Y-H*0.4,0,HIT_Y);
+      pg.addColorStop(0,'transparent');pg.addColorStop(1,LANE_COL[i]);
+      ctx.fillStyle=pg;
+      ctx.fillRect(x+1,HIT_Y-H*0.4,laneW()-2,H*0.4);
+      ctx.restore();
+      G.lanePulse[i]=Math.max(0,G.lanePulse[i]-dt*4.5);
+    }
+    /* разделители */
+    ctx.strokeStyle='rgba(190,150,255,.10)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  }
+  /* зона попадания — полупрозрачная полоса */
+  var zoneH=H*0.055;
+  ctx.save();
+  var zg=ctx.createLinearGradient(0,HIT_Y-zoneH,0,HIT_Y+zoneH*0.5);
+  zg.addColorStop(0,'rgba(190,150,255,0)');
+  zg.addColorStop(0.75,'rgba(190,150,255,.10)');
+  zg.addColorStop(1,'rgba(190,150,255,.18)');
+  ctx.fillStyle=zg;
+  ctx.fillRect(0,HIT_Y-zoneH,W,zoneH*1.5);
+  ctx.restore();
+  /* линия попадания */
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;
+  ctx.shadowColor='rgba(180,120,255,.9)';ctx.shadowBlur=16;
+  ctx.beginPath();ctx.moveTo(0,HIT_Y);ctx.lineTo(W,HIT_Y);ctx.stroke();
+  ctx.restore();
+  /* кружки-приёмники */
+  for(var k=0;k<LANES;k++){
+    ctx.save();
+    ctx.strokeStyle=LANE_COL[k];ctx.lineWidth=2.5;
+    ctx.globalAlpha=.5+G.lanePulse[k]*.5;
+    ctx.beginPath();ctx.arc(laneX(k),HIT_Y,laneW()*0.26,0,7);ctx.stroke();
+    ctx.restore();
+  }
+
+  if(G.state==='play'||G.state==='count'){
+    var t=G.state==='play'?songTime():-(0);
+    var N=G.chart?G.chart.notes:[];
+    var speed=DIFFS[G.diff].speed;
+    var lead=LEAD/speed;
+    /* пропускаем пройденные */
+    while(G.noteIdx<N.length&&N[G.noteIdx].t<t-W_GOOD-0.02){
+      var nn=N[G.noteIdx];
+      if(!nn.hit&&!nn.miss)missNote(nn);
+      G.noteIdx++;
+    }
+    for(var j=G.noteIdx;j<N.length;j++){
+      var n=N[j];
+      var dtn=n.t-t;
+      if(dtn>lead)break;
+      if(n.hit)continue;
+      var prog=1-dtn/lead;              /* 0 сверху → 1 на линии */
+      var y=prog*HIT_Y;
+      if(y<-30)continue;
+      var col=LANE_COL[n.lane];
+      var rr=laneW()*0.27;
+      ctx.save();
+      /* шлейф */
+      var tg=ctx.createLinearGradient(0,y-rr*2.4,0,y);
+      tg.addColorStop(0,'transparent');tg.addColorStop(1,col);
+      ctx.globalAlpha=.30;ctx.fillStyle=tg;
+      ctx.fillRect(laneX(n.lane)-rr*0.5,y-rr*2.4,rr,rr*2.4);
+      ctx.globalAlpha=1;
+      /* тело ноты */
+      ctx.shadowColor=col;ctx.shadowBlur=14;
+      var ng=ctx.createLinearGradient(0,y-rr,0,y+rr);
+      ng.addColorStop(0,'#fff');ng.addColorStop(.45,col);
+      ng.addColorStop(1,shade(col,-45));
+      ctx.fillStyle=ng;
+      rrect(ctx,laneX(n.lane)-rr,y-rr*0.58,rr*2,rr*1.16,rr*0.44);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  /* частицы */
+  for(var f=G.fx.length-1;f>=0;f--){
+    var p=G.fx[f];p.t+=dt;
+    if(p.t>=p.life){G.fx.splice(f,1);continue;}
+    p.x+=p.vx*dt;p.y-=p.vy*dt*60;p.vy-=dt*40;
+    ctx.globalAlpha=Math.max(0,1-p.t/p.life);
+    ctx.fillStyle=p.c;
+    ctx.beginPath();
+    ctx.arc(laneX(p.lane)+p.x*laneW()*0.4,HIT_Y+p.y,laneW()*0.045,0,7);
+    ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function shade(hex,amt){
+  var n=parseInt(hex.slice(1),16);
+  var r=clamp(((n>>16)&255)+amt,0,255),g=clamp(((n>>8)&255)+amt,0,255),b=clamp((n&255)+amt,0,255);
+  return 'rgb('+r+','+g+','+b+')';
+}
+function rrect(c,x,y,w,h,r){
+  c.beginPath();c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();
+}
+
+var prev=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!prev)prev=ts;
+  var dt=Math.min((ts-prev)/1000,0.05);prev=ts;
+  if(W<2)resize();
+  if(G.state==='play'){
+    scheduleMusic();
+    if(songTime()>G.chart.dur)endSong();
+  }
+  draw(dt);
+}
+
+/* ============================================================
+   7. HUD / ЭКРАНЫ
+   ============================================================ */
+function paintHud(){
+  $('score').textContent=fnum(G.score);
+  $('combo').textContent=G.combo;
+  var f=$('hpFill');
+  f.style.width=clamp(G.hp,0,100)+'%';
+  f.classList.toggle('low',G.hp<35);
+}
+function buildPads(){
+  var p=$('pads');p.innerHTML='';
+  for(var i=0;i<LANES;i++){
+    (function(i){
+      var b=document.createElement('button');
+      b.className='pad';b.dataset.lane=i;
+      b.innerHTML='<div class="glow" style="background:radial-gradient(circle at 50% 60%,'+
+        LANE_COL[i]+'66,transparent 70%)"></div>'+
+        '<div class="ic" style="color:'+LANE_COL[i]+'">'+LANE_ICON[i]+'</div>'+
+        '<div class="key">'+KEYS[i].toUpperCase()+'</div>';
+      b.style.borderColor=LANE_COL[i]+'55';
+      var press=function(e){
+        if(e&&e.cancelable)e.preventDefault();
+        audioWake();
+        b.classList.add('hit');
+        judge(i);
+        setTimeout(function(){b.classList.remove('hit');},90);
+      };
+      b.addEventListener('touchstart',press,{passive:false});
+      b.addEventListener('mousedown',press);
+      p.appendChild(b);
+    })(i);
+  }
+}
+function padFlash(i){
+  var b=$('pads').children[i];
+  if(!b)return;
+  b.classList.add('hit');
+  setTimeout(function(){b.classList.remove('hit');},90);
+}
+function toast(t){
+  var el=$('toast');el.textContent=t;
+  el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
+}
+function showScr(id){
+  ['intro','selScr','howScr','resScr','statScr'].forEach(function(s){
+    $(s).classList.toggle('on',s===id);
+  });
+}
+function songUnlocked(s){return P.lvl>=s.lvl;}
+function renderSel(){
+  var dr=$('diffRow');dr.innerHTML='';
+  DIFFS.forEach(function(D,i){
+    var b=document.createElement('button');
+    b.textContent=D.n;b.className=P.diff===i?'on':'';
+    b.onclick=function(){P.diff=i;sfx('click');save();renderSel();};
+    dr.appendChild(b);
+  });
+  var L=$('songList');L.innerHTML='';
+  SONGS.forEach(function(s){
+    var open=songUnlocked(s);
+    var key=s.id+'_'+P.diff;
+    var r=P.results[key];
+    var el=document.createElement('div');
+    el.className='song'+(open?'':' lock');
+    el.innerHTML='<div class="se">'+s.e+'</div><div class="st"><b>'+s.n+'</b>'+
+      '<span>'+s.d+' · '+s.bpm+' BPM'+(open?'':' · 🔒 с '+s.lvl+' ур.')+'</span></div>'+
+      '<div class="sd">'+(r?('<span style="font-size:15px;color:'+
+        ({S:'#ffd76b',A:'#7bf1a8',B:'#5ad1ff',C:'#b3a5d8',D:'#ff9a7a'}[r.rank]||'#fff')+
+        '">'+r.rank+'</span><i>'+fnum(r.score)+'</i>')
+        :'<span style="color:#6b5f8c">—</span><i>не пройден</i>')+'</div>';
+    if(open)el.onclick=function(){sfx('click');startSong(s,P.diff);};
+    else el.onclick=function(){sfx('err');toast('Откроется на '+s.lvl+' уровне');};
+    L.appendChild(el);
+  });
+}
+function paintMeta(){
+  $('introMeta').innerHTML=P.plays
+    ? 'Рекорд: <b style="color:#ffd76b">'+fnum(P.bestScore)+'</b>'+
+      (P.bestRank?' · ранг '+P.bestRank:'')+' · ур. '+P.lvl
+    : 'Первый трек — «Первая волна» 🌊';
+}
+function openStats(){
+  $('statBox').innerHTML=
+    '<div class="stb"><b style="color:#ffd76b">'+fnum(P.bestScore)+'</b><span>рекорд очков</span></div>'+
+    '<div class="stb"><b>'+(P.bestRank||'—')+'</b><span>лучший ранг</span></div>'+
+    '<div class="stb"><b>×'+P.bestCombo+'</b><span>макс. комбо</span></div>'+
+    '<div class="stb"><b>'+fnum(P.perfects)+'</b><span>PERFECT всего</span></div>'+
+    '<div class="stb"><b>'+P.plays+'</b><span>сыграно</span></div>'+
+    '<div class="stb"><b>🪙 '+fnum(P.coins)+'</b><span>монет</span></div>';
+  var done=Object.keys(P.results).length;
+  $('statLine').textContent='🎼 Пройдено: '+done+' из '+(SONGS.length*DIFFS.length)+
+    ' (трек × сложность) · Уровень '+P.lvl;
+  var L=$('statSongs');L.innerHTML='';
+  SONGS.forEach(function(s){
+    var best=null,bd=-1;
+    DIFFS.forEach(function(D,i){
+      var r=P.results[s.id+'_'+i];
+      if(r&&i>=bd){best=r;bd=i;}
+    });
+    var el=document.createElement('div');
+    el.className='song'+(songUnlocked(s)?'':' lock');
+    el.style.cursor='default';
+    el.innerHTML='<div class="se">'+s.e+'</div><div class="st"><b>'+s.n+'</b>'+
+      '<span>'+(best?('лучший: '+DIFFS[bd].n+' · '+best.acc+'% точность'):'ещё не играл')+
+      '</span></div><div class="sd">'+(best?best.rank:'—')+'</div>';
+    L.appendChild(el);
+  });
+  showScr('statScr');
+}
+
+/* ============================================================
+   8. ВВОД
+   ============================================================ */
+var held={};
+document.addEventListener('keydown',function(e){
+  var k=e.key.toLowerCase();
+  var i=KEYS.indexOf(k);
+  if(i<0)i=KEYS_RU.indexOf(k);
+  if(i>=0){
+    e.preventDefault();
+    if(held[k])return;
+    held[k]=1;
+    audioWake();judge(i);padFlash(i);
+  }
+  if(e.code==='Escape'&&G.state==='play'){G.state='menu';showScr('intro');}
+});
+document.addEventListener('keyup',function(e){held[e.key.toLowerCase()]=0;});
+
+/* ============================================================
+   9. КНОПКИ
+   ============================================================ */
+$('playBtn').onclick=function(){audioWake();sfx('click');P.seenIntro=1;save();renderSel();showScr('selScr');};
+$('selBack').onclick=function(){sfx('click');showScr('intro');};
+$('selBtn2').onclick=function(){sfx('click');renderSel();showScr('selScr');};
+$('howBtn').onclick=function(){sfx('click');showScr('howScr');};
+$('howClose').onclick=function(){sfx('click');showScr(P.seenIntro?'intro':'intro');};
+$('againBtn').onclick=function(){sfx('click');startSong(G.song,G.diff);};
+$('menuBtn2').onclick=function(){sfx('click');G.state='menu';paintMeta();showScr('intro');};
+$('lbBtn').onclick=showLB;
+$('stLb').onclick=showLB;
+$('shareBtn').onclick=share;
+$('stShare').onclick=share;
+$('stClose').onclick=function(){sfx('click');showScr(G.state==='menu'?'intro':'');};
+$('menuBtn').onclick=function(){sfx('click');openStats();};
+$('sndBtn').onclick=function(e){e.stopPropagation();toggleSnd();};
+
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){
+    save();
+    if(G.state==='play'){G.state='menu';showScr('intro');toast('Игра прервана');}
+  }
+});
+window.addEventListener('beforeunload',save);
+
+/* ============================================================
+   10. СТАРТ
+   ============================================================ */
+localLoad();
+if(P.snd===false)$('sndBtn').textContent='🔇';
+buildPads();
+resize();
+paintHud();paintMeta();
+vkInit();
+requestAnimationFrame(loop);
+
+/* экспорт для тестов */
+window.__R={P:P,G:G,SONGS:SONGS,DIFFS:DIFFS,LANES:LANES,
+  buildChart:buildChart,startSong:startSong,judge:judge,missNote:missNote,
+  endSong:endSong,failSong:failSong,songTime:songTime,scheduleMusic:scheduleMusic,
+  addXp:addXp,xpNeed:xpNeed,save:save,paintHud:paintHud,renderSel:renderSel,
+  openStats:openStats,showScr:showScr,songUnlocked:songUnlocked,
+  A:A,sfx:sfx,toggleSnd:toggleSnd,rng:rng,
+  W_PERFECT:W_PERFECT,W_GREAT:W_GREAT,W_GOOD:W_GOOD,
+  setSize:function(w,h){W=w;H=h;HIT_Y=h-Math.max(48,h*0.11);},
+  get HIT_Y(){return HIT_Y;},
+  fakeTime:function(t){G.startT=(A.ctx?A.ctx.currentTime:0)-t;}};
+})();
+</script>
+</body>
+</html>
