@@ -462,9 +462,62 @@ h2{letter-spacing:-.5px !important;font-weight:900 !important}
 }
 
 
+
+/* ===== ПАУЗА-ВИДЖЕТ =====
+   Требование модерации ВК: с телефона должен быть выход в главное
+   меню. Кнопка висит поверх игрового слоя, лист-меню — поверх всего. */
+#pw{
+  position:fixed;top:calc(8px + env(safe-area-inset-top));
+  right:calc(8px + env(safe-area-inset-right));
+  width:42px;height:42px;border-radius:13px;cursor:pointer;z-index:2147483000;
+  border:1px solid rgba(255,255,255,.26);
+  background:linear-gradient(180deg,rgba(30,34,52,.92),rgba(14,17,28,.94));
+  color:#eaf0ff;font:900 15px/1 -apple-system,Segoe UI,Roboto,sans-serif;
+  letter-spacing:1px;display:none;align-items:center;justify-content:center;
+  box-shadow:0 3px 12px rgba(0,0,0,.5);backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);padding:0;
+}
+#pw.on{display:flex}
+#pw:active{transform:translateY(2px)}
+#pwScr{
+  position:fixed;inset:0;z-index:2147483001;display:none;
+  align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  background:rgba(8,10,18,.82);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);padding:24px;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+#pwScr.on{display:flex}
+#pwScr h3{
+  font-size:26px;font-weight:900;color:#fff;margin:0 0 4px;
+  text-shadow:0 3px 0 rgba(0,0,0,.45);letter-spacing:-.4px;
+}
+#pwScr button{
+  width:100%;max-width:280px;min-height:48px;border:0;cursor:pointer;
+  font-family:inherit;font-weight:900;font-size:16px;border-radius:16px;
+  color:#0d1220;background:linear-gradient(180deg,#eaf1ff,#b9c9e8);
+  box-shadow:0 4px 0 rgba(0,0,0,.4);
+  transition:transform .1s cubic-bezier(.34,1.6,.5,1),box-shadow .1s;
+}
+#pwScr button:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+#pwScr .pwGo{background:linear-gradient(180deg,#a9f5c9,#3ddc84 55%,#22b56c);color:#052a12}
+#pwScr .pwOut{background:linear-gradient(180deg,#ffd0d8,#ff8fa3 55%,#e05b74);color:#3a0c16}
+#pwScr .pwSm{
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
+  color:#eaf0ff;border:1px solid rgba(255,255,255,.2);font-size:14px;min-height:42px;
+}
+
 </style>
 </head>
 <body>
+<!-- Пауза и выход в главное меню (требование модерации ВК) -->
+<button id="pw" aria-label="Пауза">II</button>
+<div id="pwScr" role="dialog" aria-modal="true" aria-label="Пауза">
+  <h3>Пауза</h3>
+  <button class="pwGo" id="pwGo">Продолжить</button>
+  <button class="pwSm vibBtn" id="pwVib">Вибрация: вкл</button>
+  <button class="pwOut" id="pwOut">Выйти в главное меню</button>
+</div>
+
 <div id="app">
 
   <div id="hud">
@@ -727,7 +780,160 @@ function vkInit(){
     }).catch(nop);
   }catch(e){}
 }
+
+/* ---------- вибрация: пользователь может выключить ----------
+   Требование модерации ВК: на мобильных устройствах должна быть
+   возможность отключить вибрацию. Выбор запоминается отдельно от
+   игрового сохранения, поэтому переживает сброс прогресса. */
+var VIB_KEY='vib_off_v1';
+function vibOn(){
+  try{return localStorage.getItem(VIB_KEY)!=='1';}catch(e){return true;}
+}
+function setVib(on){
+  try{
+    if(on)localStorage.removeItem(VIB_KEY);
+    else localStorage.setItem(VIB_KEY,'1');
+  }catch(e){}
+}
+function toggleVib(){
+  var on=!vibOn();
+  setVib(on);
+  paintVibBtns();
+  if(on&&navigator.vibrate)navigator.vibrate(12);
+  if(typeof toast==='function')toast(on?'Вибрация включена':'Вибрация выключена');
+  return on;
+}
+function paintVibBtns(){
+  var on=vibOn();
+  var list=document.querySelectorAll('.vibBtn');
+  for(var i=0;i<list.length;i++){
+    list[i].textContent=on?'Вибрация: вкл':'Вибрация: выкл';
+    list[i].setAttribute('aria-pressed',on?'true':'false');
+  }
+}
+
+/* ===== ВИБРАЦИЯ-КНОПКА =====
+   Модерация ВК требует возможность отключить вибрацию на телефоне.
+   Кнопку ставим рядом с кнопкой звука — так её легко найти,
+   и не нужно менять вёрстку каждого экрана. */
+(function(){
+  function mk(){
+    if(document.getElementById('vibBtn'))return;
+    var snd=null, ids=['sndBtn','sndBtn2','btnSnd','soundBtn'];
+    for(var i=0;i<ids.length;i++){
+      var e=document.getElementById(ids[i]);
+      if(e){snd=e;break;}
+    }
+    if(!snd||!snd.parentNode)return;
+    var b=document.createElement('button');
+    b.id='vibBtn';
+    b.className=snd.className+' vibBtn';
+    b.type='button';
+    b.setAttribute('aria-label','Вибрация');
+    b.textContent='Вибрация: вкл';
+    snd.parentNode.insertBefore(b,snd.nextSibling);
+    b.addEventListener('pointerdown',function(e){
+      e.preventDefault();e.stopPropagation();
+      if(typeof toggleVib==='function')toggleVib();
+    },{passive:false});
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();});
+    if(typeof paintVibBtns==='function')paintVibBtns();
+  }
+  if(document.readyState==='loading')
+    document.addEventListener('DOMContentLoaded',mk);
+  else mk();
+})();
+
+
+
+/* ---------- пауза и выход в меню ----------
+   Модерация ВК требует, чтобы с телефона можно было вернуться
+   в главное меню. Виджет универсален: игра сообщает, как её
+   поставить на паузу, снять с паузы и выйти, через setPauseHooks. */
+var PWID={pause:null,resume:null,quit:null,isPlaying:null,paused:false};
+function setPauseHooks(o){
+  PWID.pause=o.pause||null;PWID.resume=o.resume||null;
+  PWID.quit=o.quit||null;PWID.isPlaying=o.isPlaying||null;
+}
+function pwShow(on){
+  var b=document.getElementById('pw');
+  if(b)b.classList.toggle('on',!!on);
+}
+function pwOpen(){
+  if(PWID.paused)return;
+  PWID.paused=true;
+  try{if(PWID.pause)PWID.pause();}catch(e){}
+  if(typeof paintVibBtns==='function')paintVibBtns();
+  var s=document.getElementById('pwScr');
+  if(s)s.classList.add('on');
+  pwShow(false);
+}
+function pwClose(){
+  if(!PWID.paused)return;
+  PWID.paused=false;
+  var s=document.getElementById('pwScr');
+  if(s)s.classList.remove('on');
+  try{if(PWID.resume)PWID.resume();}catch(e){}
+  pwShow(true);
+}
+function pwQuit(){
+  PWID.paused=false;
+  var s=document.getElementById('pwScr');
+  if(s)s.classList.remove('on');
+  pwShow(false);
+  pwGuard();
+  try{if(PWID.quit)PWID.quit();}catch(e){}
+}
+/* Щит от «хвоста» тапа: после закрытия листа палец отпускается уже
+   над кнопкой главного меню, и она срабатывает сама собой.
+   Полсекунды перехватываем остаточные события. */
+function pwGuard(){
+  var d=document.getElementById('pwGuard');
+  if(!d){
+    d=document.createElement('div');
+    d.id='pwGuard';
+    d.style.cssText='position:fixed;inset:0;z-index:2147483002;background:transparent';
+    ['pointerdown','pointerup','click','touchstart','touchend'].forEach(function(ev){
+      d.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();},{passive:false});
+    });
+  }
+  if(!d.parentNode)document.body.appendChild(d);
+  clearTimeout(pwGuard._t);
+  pwGuard._t=setTimeout(function(){
+    if(d.parentNode)d.parentNode.removeChild(d);
+  },500);
+}
+(function(){
+  function tap(el,fn){
+    if(!el)return;
+    el.addEventListener('pointerdown',function(e){
+      e.preventDefault();e.stopPropagation();fn();
+    },{passive:false});
+    el.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();});
+  }
+  function init(){
+    tap(document.getElementById('pw'),pwOpen);
+    tap(document.getElementById('pwGo'),pwClose);
+    tap(document.getElementById('pwOut'),pwQuit);
+    tap(document.getElementById('pwVib'),function(){
+      if(typeof toggleVib==='function')toggleVib();
+    });
+    if(typeof paintVibBtns==='function')paintVibBtns();
+    /* кнопка видна ровно тогда, когда идёт игра */
+    setInterval(function(){
+      if(PWID.paused)return;
+      var play=false;
+      try{play=PWID.isPlaying?!!PWID.isPlaying():false;}catch(e){}
+      pwShow(play);
+    },400);
+  }
+  if(document.readyState==='loading')
+    document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+
 function haptic(s){
+  if(!vibOn())return;
   if(VK.ready)bridge.send('VKWebAppTapticImpactOccurred',{style:s||'light'}).catch(nop);
   else if(navigator.vibrate)navigator.vibrate(s==='heavy'?30:6);
 }
@@ -756,6 +962,43 @@ function joinGroup(){
 }
 
 
+
+/* ---------- ссылка на само приложение ----------
+   Модерация ВК: «в шеринге ссылка на сторонний ресурс». Раньше уходил
+   location.href — адрес хостинга, для ВК это внешний сайт. Собираем
+   внутреннюю ссылку vk.com/app<id> из параметров запуска. Если id
+   неизвестен (открыто вне ВК), ссылку не прикладываем совсем. */
+var VK_APP_ID='';
+(function(){
+  try{
+    var q=new URLSearchParams(location.search);
+    var id=q.get('vk_app_id')||'';
+    if(!id&&location.hash){
+      var h=new URLSearchParams(location.hash.replace(/^#/,''));
+      id=h.get('vk_app_id')||'';
+    }
+    if(/^\d+$/.test(id))VK_APP_ID=id;
+  }catch(e){}
+})();
+function vkAppLink(){
+  return VK_APP_ID?('https://vk.com/app'+VK_APP_ID):'';
+}
+
+/* Вне ВКонтакте: отдаём текст со ссылкой на приложение, если она
+   известна. Адрес хостинга наружу не уходит. */
+function shareText(t){
+  var l=vkAppLink();
+  return l?(t+' '+l):t;
+}
+function shareOut(t){
+  var l=vkAppLink();
+  var d={text:t};
+  if(l)d.url=l;
+  if(navigator.share){navigator.share(d).catch(function(){});return;}
+  try{navigator.clipboard.writeText(shareText(t));}catch(e){}
+}
+
+
 /* ---------- поделиться результатом ----------
    Старый метод постинга на стену ВК отключил,
    и модерация браковала приложения за его вызов. Теперь:
@@ -767,9 +1010,10 @@ function shareStory(text,link){
   try{
     bridge.send('VKWebAppShowStoryBox',{
       background_type:'none',
-      attachment:{text:'open',type:'url',url:link||location.href}
+      attachment:{text:'open',type:'url',url:link||vkAppLink()}
     }).catch(function(){
-      bridge.send('VKWebAppShare',{link:link||location.href}).catch(nop);
+      var _l=link||vkAppLink();
+      if(_l)bridge.send('VKWebAppShare',{link:_l}).catch(nop);
     });
     return true;
   }catch(e){return false;}
@@ -779,9 +1023,9 @@ function share(){
   var t='Выбил ранг '+(P.bestRank||'—')+' в «РИТМ-ГЕРОЕ» 🎵 '+fnum(P.bestScore)+
     ' очков и комбо ×'+P.bestCombo+'! Попадёшь точнее?';
   if(VK.ready){
-    shareStory(t,location.href);
-  }else if(navigator.share){navigator.share({text:t,url:location.href}).catch(nop);}
-  else{try{navigator.clipboard.writeText(t+' '+location.href);toast('📋 Скопировано');}catch(e){toast(t);}}
+    shareStory(t,vkAppLink());
+  }else if(navigator.share){shareOut(t);}
+  else{try{navigator.clipboard.writeText(shareText(t));toast('📋 Скопировано');}catch(e){toast(t);}}
 }
 var adBusy=false;
 function watchAd(cb){
@@ -1772,6 +2016,18 @@ $('selBtn2').onclick=function(){sfx('click');renderSel();showScr('selScr');};
 $('howBtn').onclick=function(){sfx('click');showScr('howScr');};
 $('howClose').onclick=function(){sfx('click');showScr(P.seenIntro?'intro':'intro');};
 $('againBtn').onclick=function(){sfx('click');startSong(G.song,G.diff);};
+/* В ритм-игре время трека идёт по часам аудиодвижка, поэтому честной
+   «паузы с продолжением» тут нет: меню сразу предлагает выйти. */
+setPauseHooks({
+  isPlaying:function(){return G.state==='play';},
+  pause:function(){},
+  resume:function(){},
+  quit:function(){
+    /* обрываем трек: планировщик смотрит на G.state */
+    G.ended=true;G.state='menu';
+    paintMeta();showScr('intro');
+  }
+});
 $('menuBtn2').onclick=function(){sfx('click');G.state='menu';paintMeta();showScr('intro');};
 $('lbBtn').onclick=showLB;
 $('stLb').onclick=joinGroup;
@@ -1811,7 +2067,18 @@ window.__R={P:P,G:G,SONGS:SONGS,DIFFS:DIFFS,LANES:LANES,
   setSize:function(w,h){W=w;H=h;HIT_Y=h-Math.max(48,h*0.11);},
   get HIT_Y(){return HIT_Y;},
   fakeTime:function(t){G.startT=(A.ctx?A.ctx.currentTime:0)-t;}};
+
+/* Экспорт для автопроверки требований модерации (не влияет на игру) */
+try{window.__MOD={
+  link:function(){return typeof vkAppLink==='function'?vkAppLink():null;},
+  vibOn:function(){return typeof vibOn==='function'?vibOn():null;},
+  toggleVib:function(){return typeof toggleVib==='function'?toggleVib():null;},
+  haptic:function(s){if(typeof haptic==='function')haptic(s);}
+};}catch(e){}
+
 })();
+
+
 </script>
 </body>
 </html>
